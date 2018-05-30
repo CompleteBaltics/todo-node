@@ -12,9 +12,28 @@ const todos = [
   },
   {
     _id: new ObjectID(),
-    text: 'Second test todo'
+    text: 'Second test todo',
+    completed: true,
+    completedAt: 333
   }
 ];
+
+expect.extend({
+  toBeA: (recieved, arg) => {
+    if (arg === typeof recieved) {
+      return {
+        message: () =>
+          `expected received arguments to be type of ${arg}`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () => `expected received arguments to be type of ${arg}, but they are ${typeof recieved}`,
+        pass: false,
+      };
+    }
+  }
+})
 
 beforeEach((done) => {
   Todo.remove({}).then(() => {
@@ -141,4 +160,44 @@ describe('DELETE /todos/:id', () => {
       })
       .end(done);
   });
+});
+
+describe('PATCH /todos/:id', () => {
+  it('should update todo doc and return it', (done) => {
+    let id = todos[0]._id.toHexString();
+    request(app)
+      .patch(`/todos/${id}`)
+      .send({completed: true})
+      .expect(200)
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        Todo.findById(id).then((todo) => {
+          expect(todo.completed).toBe(true);
+          expect(todo.completedAt).toBeA('number');
+          done();
+        }).catch((err) => done(err));
+      });
+  });
+
+  it('should clear completedAt when todo is not completed', (done) => {
+    let id = todos[0]._id.toHexString();
+    request(app)
+      .patch(`/todos/${id}`)
+      .send({completed: false})
+      .expect(200)
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        Todo.findById(id).then((todo) => {
+          expect(todo.completedAt).toBeFalsy();
+          done();
+        }).catch((err) => done(err));
+      });
+  });
+
 });
