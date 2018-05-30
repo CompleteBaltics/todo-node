@@ -94,7 +94,26 @@ app.patch('/todos/:id', (req, res) => {
 
     res.send({todo});
   }).catch((err) => console.log(err));
-})
+});
+
+app.post('/users', (req, res) => {
+  let args = _.pick(req.body, ['email', 'password']);
+
+  let newUser = new User(args);
+
+  newUser.save().then(() => {
+    return newUser.generateAuthToken();
+  }).then((token) => {
+    res.header('x-auth', token).send(newUser);
+  }).catch((e) => {
+    if (e.name === 'ValidationError') {
+      return res.status(400).send({errorMessage: e.message});
+    }else if (e.name === 'MongoError' && e.code === 11000) {
+      return res.status(400).send({errorMessage: `User with email ${args.email} already exists`});
+    }
+    res.status(400).send(e);
+  });
+});
 
 app.listen(port, () => {
   console.log('Server started on port ' + port);
