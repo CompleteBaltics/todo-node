@@ -273,6 +273,18 @@ describe('POST /users/login', () => {
         password: users[1].password+1
       })
       .expect(400)
-      .end(done);
+      .expect((res) => {
+        expect(res.header['x-auth']).not.toBeDefined()
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User.findById(users[1]._id).then((user) => {
+          expect(user.tokens.length).toBe(0);
+          done();
+        }).catch((err) => done(err));
+      });
   });
 });
