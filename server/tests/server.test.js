@@ -220,7 +220,7 @@ describe('POST /users', () => {
          expect(user).toBeDefined();
          expect(user.password).not.toBe(password);
          done();
-       });
+       }).catch((err) => done(err));
      });
   });
 
@@ -236,6 +236,42 @@ describe('POST /users', () => {
     request(app)
       .post('/users')
       .send({emails: users[0].email, password: '1246asdf'})
+      .expect(400)
+      .end(done);
+  });
+});
+
+describe('POST /users/login', () => {
+  it('should login user and return auth token', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({
+        email: users[1].email,
+        password: users[1].password
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.header['x-auth']).toBeDefined()
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User.findById(users[1]._id).then((user) => {
+          expect(user.tokens[0].token).toBe(res.header['x-auth']);
+          done();
+        }).catch((err) => done(err));
+      });
+  });
+
+  it('should reject invalid login', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({
+        email: users[1].email,
+        password: users[1].password+1
+      })
       .expect(400)
       .end(done);
   });
