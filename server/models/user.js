@@ -50,7 +50,17 @@ UserSchema.methods.generateAuthToken = function(){
     return token;
   });
   return userPromise;
-}
+};
+
+UserSchema.methods.removeToken = function(token){
+  let user = this;
+
+  return user.update({
+    $pull: {
+      tokens: {token}
+    }
+  });
+};
 
 UserSchema.methods.toJSON = function(){
   let user = this;
